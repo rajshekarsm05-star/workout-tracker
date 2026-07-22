@@ -612,9 +612,11 @@ async function saveUserProfile(user) {
 
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
+console.log("Firebase script loaded");
 
 document.getElementById("loginBtn")
 .addEventListener("click", async () => {
+  console.log("Firebase script loaded");
       try {
 
     const result = await signInWithPopup(auth, provider);
