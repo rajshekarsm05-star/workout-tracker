@@ -570,5 +570,41 @@ function init(){
 }
 init();
 </script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAUkstP7OaAQJFkimW7wvRj4AeDsUj2Jcc",
+  authDomain: "workouttracker-e6041.firebaseapp.com",
+  projectId: "workouttracker-e6041",
+  storageBucket: "workouttracker-e6041.firebasestorage.app",
+  messagingSenderId: "458724887906",
+  appId: "1:458724887906:web:66dad3f237390233f4703b",
+  measurementId: "G-MMMLV4ZM5M"
+};
+
+const app = initializeApp(firebaseConfig);
+
+const auth = getAuth(app);
+const provider = new GoogleAuthProvider();
+
+document.getElementById("loginBtn")
+.addEventListener("click", async () => {
+
+  const result = await signInWithPopup(
+    auth,
+    provider
+  );
+
+  document.getElementById("userInfo")
+    .innerText =
+      "Logged in as " +
+      result.user.displayName;
+
+});
+
+</script>
 </body>
 </html>
