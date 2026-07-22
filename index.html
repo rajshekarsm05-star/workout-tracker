@@ -554,10 +554,22 @@ document.getElementById('clearDataBtn').addEventListener('click', () => {
   flashMsg('All data cleared');
 });
 
-document.getElementById('saveBtn').addEventListener('click', () => {
+  document.getElementById('saveBtn').addEventListener('click', async () => {
+  // 1. Save locally first for instant feedback
   saveData(data);
+  
+  // 2. Save to Firestore
+  try {
+    await saveWorkoutData(data);
+    flashMsg('Saved ✓');
+  } catch (err) {
+    console.error('Firestore save failed:', err);
+    flashMsg('Saved locally (Offline)');
+  }
+
+  // 3. Update UI
   renderSessionSelector();
-  flashMsg('Saved ✓');
+});
 });
 
 /* ---------- Init ---------- */
@@ -641,6 +653,25 @@ document.getElementById("loginBtn")
     console.error("Login error:", error);
 
   }
+async function saveWorkoutData(data) {
+
+  if(!window.currentUserId){
+    alert("Please login first");
+    return;
+  }
+
+  await setDoc(
+    doc(db, "users", window.currentUserId),
+    {
+      workoutData: data,
+      updatedAt: new Date().toISOString()
+    },
+    { merge: true }
+  );
+
+  console.log("Workout saved to Firestore");
+
+}
   
 });
 
