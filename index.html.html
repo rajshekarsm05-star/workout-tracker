@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Alpha.R — Workout Tracker</title>
+<style>
+  :root{
+    --bg: #14151a;
+    --panel: #1d1f26;
+    --panel-2: #262933;
+    --line: #33363f;
+    --text: #eceef2;
+    --muted: #8b8f9c;
+    --accent: #e8a33d;
+    --good: #4fae7a;
+    --bad: #d9634d;
+    --radius: 10px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);}
+  body{
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+    padding-bottom:80px;
+  }
+  header{
+    position:sticky; top:0; z-index:20;
+    background:linear-gradient(180deg, var(--bg) 80%, transparent);
+    padding:18px 16px 8px;
+  }
+  .brand{ display:flex; align-items:baseline; gap:10px; }
+  .brand .mark{
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight:700; font-style:italic;
+    font-size:26px; letter-spacing:-0.5px; color:var(--accent);
+  }
+  .brand .sub{ font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--muted);}
+  .name-row{ margin-top:14px; display:flex; gap:8px; align-items:center; }
+  .name-row input{
+    flex:1; background:var(--panel); border:1px solid var(--line); color:var(--text);
+    border-radius:var(--radius); padding:10px 12px; font-size:14px;
+  }
+  .name-row #clearDataBtn{
+    flex:none; background:transparent; border:1px solid var(--bad); color:var(--bad);
+    border-radius:var(--radius); padding:9px 12px; font-size:12px; font-weight:700; white-space:nowrap;
+  }
+
+  nav.tabs{ display:flex; gap:6px; padding:14px 16px 4px; overflow-x:auto; }
+  nav.tabs button{
+    flex:none; background:var(--panel); border:1px solid var(--line); color:var(--muted);
+    padding:9px 14px; border-radius:999px; font-size:13px; font-weight:600; letter-spacing:0.2px;
+  }
+  nav.tabs button.active{ background:var(--accent); color:#1a1300; border-color:var(--accent); }
+
+  main{ padding:6px 16px 24px; }
+
+  .session-bar{ display:flex; gap:8px; align-items:center; margin:14px 0 10px; flex-wrap:wrap; }
+  .session-bar select, .session-bar input[type=date]{
+    background:var(--panel); border:1px solid var(--line); color:var(--text);
+    border-radius:var(--radius); padding:9px 10px; font-size:13px; flex:1; min-width:110px;
+  }
+  .session-bar button{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--accent);
+    border-radius:var(--radius); padding:9px 12px; font-size:13px; font-weight:700; white-space:nowrap;
+  }
+
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px 14px; margin-bottom:10px;
+  }
+  .ex-row{ display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .ex-name{ font-size:14.5px; font-weight:600; }
+  .ex-meta{ font-size:11px; color:var(--muted); margin-top:2px; }
+  .trend{ font-size:11px; font-weight:700; padding:2px 7px; border-radius:6px; white-space:nowrap; }
+  .trend.up{ color:var(--good); background:rgba(79,174,122,0.12); }
+  .trend.down{ color:var(--bad); background:rgba(217,99,77,0.12); }
+  .trend.flat{ color:var(--muted); background:rgba(139,143,156,0.12); }
+
+  .set-block{ margin-top:10px; }
+  .set-label{ font-size:10.5px; font-weight:700; color:var(--accent); letter-spacing:0.5px; margin-bottom:5px; }
+  .inputs{ display:flex; gap:8px; }
+  .field{ flex:1; }
+  .field label{ font-size:10px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); display:block; margin-bottom:4px; }
+  .field input{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:9px 10px; font-size:15px; font-weight:600; text-align:center;
+  }
+  .field input:focus{ outline:none; border-color:var(--accent); }
+
+  .hist-toggle{ font-size:11px; color:var(--muted); margin-top:8px; display:inline-block; }
+  .hist{ display:none; margin-top:8px; border-top:1px dashed var(--line); padding-top:8px; }
+  .hist.open{ display:block; }
+  .hist-row{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted); padding:3px 0; gap:6px; }
+  .hist-row span.d{ color:var(--text); flex:none; width:78px; }
+
+  .section-title{ font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:var(--muted); margin:18px 2px 8px; }
+
+  footer.bar{
+    position:fixed; bottom:0; left:0; right:0; background:var(--panel);
+    border-top:1px solid var(--line); padding:10px 16px; display:flex; gap:8px; z-index:20;
+  }
+  footer.bar button{
+    flex:1; border:none; border-radius:var(--radius); padding:12px; font-size:13.5px; font-weight:800; letter-spacing:0.2px;
+  }
+  footer.bar #saveBtn{ background:var(--accent); color:#1a1300; }
+  footer.bar #reportBtn{ background:var(--panel-2); color:var(--text); border:1px solid var(--line); }
+
+  .msg{
+    position:fixed; bottom:64px; left:50%; transform:translateX(-50%);
+    background:var(--panel-2); color:var(--accent); border:1px solid var(--accent);
+    padding:8px 16px; border-radius:999px; font-size:12px; opacity:0; transition:opacity .25s;
+    pointer-events:none; z-index:30;
+  }
+  .msg.show{ opacity:1; }
+
+  .empty{ text-align:center; color:var(--muted); font-size:13px; padding:30px 10px; }
+
+  /* ---- Report overlay ---- */
+  #reportOverlay{
+    display:none; position:fixed; inset:0; background:var(--bg); z-index:50; overflow-y:auto;
+  }
+  #reportOverlay.open{ display:block; }
+  .report-topbar{
+    position:sticky; top:0; display:flex; justify-content:space-between; align-items:center;
+    padding:14px 16px; background:var(--bg); border-bottom:1px solid var(--line); z-index:2;
+  }
+  .report-topbar button{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    border-radius:8px; padding:8px 12px; font-size:13px; font-weight:700;
+  }
+  .report-topbar .print-btn{ background:var(--accent); color:#1a1300; border:none; }
+  #reportContent{ padding:20px 18px 60px; max-width:720px; margin:0 auto; }
+  #reportContent h1{ font-size:20px; margin:0 0 2px; font-family: Georgia, serif; font-style:italic; color:var(--accent); }
+  #reportContent .rmeta{ font-size:12px; color:var(--muted); margin-bottom:20px; }
+  .rex{ margin-bottom:18px; border-bottom:1px solid var(--line); padding-bottom:14px; }
+  .rex h3{ font-size:14px; margin:0 0 6px; }
+  table.rtable{ width:100%; border-collapse:collapse; font-size:11.5px; }
+  table.rtable th, table.rtable td{ padding:5px 6px; text-align:left; border-bottom:1px solid var(--line); }
+  table.rtable th{ color:var(--muted); font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:0.5px; }
+  .r-trend{ font-weight:700; }
+  .r-trend.up{ color:var(--good); }
+  .r-trend.down{ color:var(--bad); }
+
+  @media print{
+    body *{ visibility:hidden; }
+    #reportOverlay, #reportOverlay *{ visibility:visible; }
+    #reportOverlay{ position:absolute; inset:0; background:#fff !important; color:#111 !important; }
+    .report-topbar{ display:none !important; }
+    #reportContent h1{ color:#111 !important; }
+    #reportContent .rmeta{ color:#555 !important; }
+    table.rtable th{ color:#555 !important; }
+    table.rtable th, table.rtable td{ border-color:#ccc !important; }
+    .r-trend.up{ color:#1a7a3e !important; }
+    .r-trend.down{ color:#a3341f !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="mark">Alpha.R</span>
+    <span class="sub">Progression Diary</span>
+  </div>
+  <div class="name-row">
+    <input id="userName" type="text" placeholder="Your name" />
+    <button id="clearDataBtn" title="Clear all logged data">Clear data</button>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs"></nav>
+
+<main>
+  <div class="session-bar">
+    <select id="sessionSelect"></select>
+    <input type="date" id="sessionDate" />
+    <button id="newSessionBtn">+ New</button>
+  </div>
+  <div id="exerciseList"></div>
+</main>
+
+<footer class="bar">
+  <button id="reportBtn">Progress report</button>
+  <button id="saveBtn">Save session</button>
+</footer>
+
+<div class="msg" id="msg">Saved</div>
+
+<div id="reportOverlay">
+  <div class="report-topbar">
+    <button id="closeReport">← Back</button>
+    <button class="print-btn" id="printReport">Download / Print PDF</button>
+  </div>
+  <div id="reportContent"></div>
+</div>
+
+<script>
+/* ---------- Data model ---------- */
+const STORAGE_KEY = 'alpharlog_data_v2';
+
+const PROGRAM = {
+  "Warm-up": [
+    { name: "Cycle", sets: 1, reps: "5 min" }
+  ],
+  "Workout 1": [
+    { name: "Dumbbell squat", sets: 2, reps: 15 },
+    { name: "Leg press", sets: 2, reps: 15 },
+    { name: "Leg extension", sets: 2, reps: 15 },
+    { name: "Leg curl", sets: 2, reps: 15 },
+    { name: "Machine shoulder press", sets: 2, reps: 15 },
+    { name: "Dumbbell front lateral", sets: 2, reps: 15 },
+    { name: "Reverse pec-flyes", sets: 2, reps: 15 },
+    { name: "Machine bicep curl", sets: 2, reps: 15 },
+    { name: "Arm blaster dumbbell curl", sets: 2, reps: 15 },
+    { name: "Hammer curl", sets: 2, reps: 15 },
+    { name: "Wrist curl", sets: 2, reps: 15 },
+    { name: "Leg press calf raises", sets: 2, reps: 15 }
+  ],
+  "Workout 2": [
+    { name: "Vertical chest press", sets: 2, reps: 15 },
+    { name: "Incline chest press", sets: 2, reps: 15 },
+    { name: "Pec-flyes", sets: 2, reps: 15 },
+    { name: "Dumbbell pull-over", sets: 2, reps: 15 },
+    { name: "Lat pull-down", sets: 2, reps: 15 },
+    { name: "Machine row", sets: 2, reps: 15 },
+    { name: "Dumbbell shrugs", sets: 2, reps: 15 },
+    { name: "V-bar triceps push-down", sets: 2, reps: 15 },
+    { name: "Tricep press", sets: 2, reps: 15 },
+    { name: "Vertical ab crunch", sets: 2, reps: 15 },
+    { name: "Ball static crunch", sets: 2, reps: "45 sec" },
+    { name: "Neck", sets: 2, reps: 15 }
+  ]
+};
+
+const SEED_DATA = {"name": "Narendra C.", "sessions": [{"id": "seed1", "date": "2026-04-30", "entries": {"Workout 1::Dumbbell squat": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "25", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "10", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "2.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "10", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "2", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "2", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "10", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed2", "date": "2026-05-07", "entries": {"Workout 1::Dumbbell squat": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "25", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "15", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "10", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "25", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "25", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed3", "date": "2026-05-14", "entries": {"Workout 1::Dumbbell squat": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "15", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "4", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "25", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed4", "date": "2026-05-21", "entries": {"Workout 1::Dumbbell squat": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "15", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "35", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed5", "date": "2026-05-28", "entries": {"Workout 1::Dumbbell squat": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "35", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "15", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed6", "date": "2026-06-04", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "35", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "15", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed7", "date": "2026-06-11", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "15", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed8", "date": "2026-06-18", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed9", "date": "2026-06-25", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed10", "date": "2026-07-02", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "70", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "35", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed11", "date": "2026-07-09", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "70", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed12", "date": "2026-07-16", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "70", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "45", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}, {"id": "seed13", "date": "2026-07-23", "entries": {"Workout 1::Dumbbell squat": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press": {"wt1": "80", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg extension": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg curl": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine shoulder press": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Dumbbell front lateral": {"wt1": "6", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Reverse pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Machine bicep curl": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Arm blaster dumbbell curl": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Hammer curl": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Wrist curl": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 1::Leg press calf raises": {"wt1": "70", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical chest press": {"wt1": "46", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Incline chest press": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Pec-flyes": {"wt1": "60", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell pull-over": {"wt1": "7.5", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Lat pull-down": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Machine row": {"wt1": "40", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Dumbbell shrugs": {"wt1": "7", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::V-bar triceps push-down": {"wt1": "20", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Tricep press": {"wt1": "50", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Vertical ab crunch": {"wt1": "30", "reps1": "15", "wt2": "", "reps2": ""}, "Workout 2::Ball static crunch": {"wt1": "", "reps1": "45 sec", "wt2": "", "reps2": ""}, "Workout 2::Neck": {"wt1": "", "reps1": "15", "wt2": "", "reps2": ""}}}]};
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return { name: '', sessions: [] };
+    return JSON.parse(raw);
+  }catch(e){ return { name: '', sessions: [] }; }
+}
+function saveData(data){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+  catch(e){ console.error('Storage error', e); }
+}
+
+let data = loadData();
+let currentTab = "Workout 1";
+let currentSessionId = null;
+
+/* ---------- Helpers ---------- */
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function uid(){ return 's' + Date.now() + Math.random().toString(16).slice(2,6); }
+function entryKey(category, exName){ return category + '::' + exName; }
+
+function emptyEntry(){ return { wt1:'', reps1:'', wt2:'', reps2:'' }; }
+
+function ensureSessionExists(){
+  if(data.sessions.length === 0){
+    const s = { id: uid(), date: todayISO(), entries: {} };
+    data.sessions.push(s);
+    currentSessionId = s.id;
+  }
+  if(!currentSessionId){
+    currentSessionId = data.sessions[data.sessions.length-1].id;
+  }
+}
+function getSession(id){ return data.sessions.find(s => s.id === id); }
+
+function hasValue(entry){
+  return entry && (entry.wt1 !== '' && entry.wt1 != null || entry.wt2 !== '' && entry.wt2 != null);
+}
+
+function getHistory(category, exName, uptoDate){
+  const key = entryKey(category, exName);
+  const sorted = [...data.sessions].sort((a,b)=> a.date.localeCompare(b.date));
+  const history = [];
+  sorted.forEach(s => {
+    const e = s.entries[key];
+    if(hasValue(e) && (!uptoDate || s.date <= uptoDate)){
+      history.push({ date: s.date, ...e });
+    }
+  });
+  return history;
+}
+
+function bestWeight(entry){
+  const w1 = parseFloat(entry.wt1), w2 = parseFloat(entry.wt2);
+  const vals = [w1,w2].filter(v => !isNaN(v));
+  if(vals.length === 0) return null;
+  return Math.max(...vals);
+}
+
+/* ---------- Rendering ---------- */
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = '';
+  Object.keys(PROGRAM).forEach(cat => {
+    const btn = document.createElement('button');
+    btn.textContent = cat;
+    if(cat === currentTab) btn.classList.add('active');
+    btn.onclick = () => { currentTab = cat; renderTabs(); renderExercises(); };
+    nav.appendChild(btn);
+  });
+}
+
+function renderSessionSelector(){
+  ensureSessionExists();
+  const sel = document.getElementById('sessionSelect');
+  sel.innerHTML = '';
+  const sorted = [...data.sessions].sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+  sorted.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    const count = Object.values(s.entries||{}).filter(hasValue).length;
+    opt.textContent = s.date + (count ? ` (${count} logged)` : ' (empty)');
+    if(s.id === currentSessionId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.onchange = () => {
+    currentSessionId = sel.value;
+    const s = getSession(currentSessionId);
+    document.getElementById('sessionDate').value = s.date;
+    renderExercises();
+  };
+  const s = getSession(currentSessionId);
+  document.getElementById('sessionDate').value = s ? s.date : todayISO();
+}
+
+function trendBadge(history){
+  if(history.length < 2) return '';
+  const last = bestWeight(history[history.length-1]);
+  const prev = bestWeight(history[history.length-2]);
+  if(last == null || prev == null) return '';
+  if(last > prev) return `<span class="trend up">▲ +${(last-prev).toFixed(1)}</span>`;
+  if(last < prev) return `<span class="trend down">▼ ${(last-prev).toFixed(1)}</span>`;
+  return `<span class="trend flat">— same</span>`;
+}
+
+function renderExercises(){
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = '';
+  const exercises = PROGRAM[currentTab] || [];
+  const session = getSession(currentSessionId);
+  if(!session){ list.innerHTML = '<div class="empty">No session selected.</div>'; return; }
+
+  const title = document.createElement('div');
+  title.className = 'section-title';
+  title.textContent = currentTab + ' · ' + exercises.length + ' exercises';
+  list.appendChild(title);
+
+  exercises.forEach((ex, i) => {
+    const key = entryKey(currentTab, ex.name);
+    const existing = session.entries[key] || emptyEntry();
+    const history = getHistory(currentTab, ex.name, session.date);
+
+    const lastEntry = history.length ? history[history.length-1] : null;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="ex-row">
+        <div>
+          <div class="ex-name">${i+1}. ${ex.name}</div>
+          <div class="ex-meta">${ex.sets} sets × ${ex.reps} reps</div>
+        </div>
+        ${trendBadge(history)}
+      </div>
+
+      <div class="set-block">
+        <div class="set-label">SET 1</div>
+        <div class="inputs">
+          <div class="field">
+            <label>Weight</label>
+            <input type="number" inputmode="decimal" step="0.5" placeholder="${lastEntry ? lastEntry.wt1 : '—'}" value="${existing.wt1}" data-key="${key}" data-field="wt1" />
+          </div>
+          <div class="field">
+            <label>Reps</label>
+            <input type="text" inputmode="numeric" placeholder="${lastEntry ? lastEntry.reps1 : ex.reps}" value="${existing.reps1}" data-key="${key}" data-field="reps1" />
+          </div>
+        </div>
+      </div>
+
+      <div class="set-block">
+        <div class="set-label">SET 2</div>
+        <div class="inputs">
+          <div class="field">
+            <label>Weight</label>
+            <input type="number" inputmode="decimal" step="0.5" placeholder="${lastEntry ? lastEntry.wt2 : '—'}" value="${existing.wt2}" data-key="${key}" data-field="wt2" />
+          </div>
+          <div class="field">
+            <label>Reps</label>
+            <input type="text" inputmode="numeric" placeholder="${lastEntry ? lastEntry.reps2 : ex.reps}" value="${existing.reps2}" data-key="${key}" data-field="reps2" />
+          </div>
+        </div>
+      </div>
+
+      ${history.length ? `<div class="hist-toggle" data-toggle="${key}">View history (${history.length}) ▾</div>
+      <div class="hist" id="hist-${key}">
+        ${history.slice().reverse().map(h => `<div class="hist-row"><span class="d">${h.date}</span><span>S1: ${h.wt1||'-'}×${h.reps1||'-'} · S2: ${h.wt2||'-'}×${h.reps2||'-'}</span></div>`).join('')}
+      </div>` : ''}
+    `;
+    list.appendChild(card);
+  });
+
+  list.querySelectorAll('input[data-key]').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const key = e.target.dataset.key;
+      const field = e.target.dataset.field;
+      if(!session.entries[key]) session.entries[key] = emptyEntry();
+      session.entries[key][field] = e.target.value;
+    });
+  });
+
+  list.querySelectorAll('[data-toggle]').forEach(t => {
+    t.addEventListener('click', () => {
+      const el = document.getElementById('hist-' + t.dataset.toggle);
+      el.classList.toggle('open');
+      t.textContent = t.textContent.includes('▾') ? t.textContent.replace('▾','▴') : t.textContent.replace('▴','▾');
+    });
+  });
+}
+
+function flashMsg(text){
+  const msg = document.getElementById('msg');
+  msg.textContent = text;
+  msg.classList.add('show');
+  setTimeout(()=> msg.classList.remove('show'), 1400);
+}
+
+/* ---------- Progress report ---------- */
+function buildReport(){
+  const el = document.getElementById('reportContent');
+  const name = data.name || 'Your';
+  const dateStr = new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+
+  let html = `<h1>${name}'s Progress Report</h1><div class="rmeta">Generated ${dateStr} · Alpha.R Progression Diary</div>`;
+
+  Object.keys(PROGRAM).forEach(cat => {
+    PROGRAM[cat].forEach(ex => {
+      const history = getHistory(cat, ex.name);
+      if(history.length === 0) return;
+      const first = bestWeight(history[0]);
+      const last = bestWeight(history[history.length-1]);
+      let trendHtml = '';
+      if(first != null && last != null && history.length > 1){
+        const diff = last - first;
+        if(diff > 0) trendHtml = `<span class="r-trend up">▲ +${diff.toFixed(1)} since first log</span>`;
+        else if(diff < 0) trendHtml = `<span class="r-trend down">▼ ${diff.toFixed(1)} since first log</span>`;
+        else trendHtml = `<span class="r-trend">No change since first log</span>`;
+      }
+      html += `<div class="rex">
+        <h3>${ex.name} <span style="color:var(--muted); font-weight:400; font-size:11px;">(${cat})</span></h3>
+        ${trendHtml ? `<div style="margin-bottom:6px;">${trendHtml}</div>` : ''}
+        <table class="rtable">
+          <tr><th>Date</th><th>Set 1</th><th>Set 2</th></tr>
+          ${history.map(h => `<tr>
+            <td>${h.date}</td>
+            <td>${h.wt1||'-'} × ${h.reps1||'-'}</td>
+            <td>${h.wt2||'-'} × ${h.reps2||'-'}</td>
+          </tr>`).join('')}
+        </table>
+      </div>`;
+    });
+  });
+
+  if(html.indexOf('rex') === -1){
+    html += `<div class="empty">No logged sessions yet. Log a few workouts first, then generate your report.</div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+document.getElementById('reportBtn').addEventListener('click', () => {
+  saveData(data);
+  buildReport();
+  document.getElementById('reportOverlay').classList.add('open');
+});
+document.getElementById('closeReport').addEventListener('click', () => {
+  document.getElementById('reportOverlay').classList.remove('open');
+});
+document.getElementById('printReport').addEventListener('click', () => {
+  const reportHtml = document.getElementById('reportContent').innerHTML;
+  const printDoc = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Progress Report</title>
+<style>
+  body{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color:#111; background:#fff; margin:0; padding:20px 18px 60px; max-width:720px; }
+  h1{ font-size:20px; margin:0 0 2px; font-family: Georgia, serif; font-style:italic; color:#b5762a; }
+  .rmeta{ font-size:12px; color:#666; margin-bottom:20px; }
+  .rex{ margin-bottom:18px; border-bottom:1px solid #ddd; padding-bottom:14px; }
+  .rex h3{ font-size:14px; margin:0 0 6px; }
+  table.rtable{ width:100%; border-collapse:collapse; font-size:11.5px; }
+  table.rtable th, table.rtable td{ padding:5px 6px; text-align:left; border-bottom:1px solid #ddd; }
+  table.rtable th{ color:#666; font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:0.5px; }
+  .r-trend{ font-weight:700; }
+  .r-trend.up{ color:#1a7a3e; }
+  .r-trend.down{ color:#a3341f; }
+  .empty{ text-align:center; color:#666; font-size:13px; padding:30px 10px; }
+  @media print{ body{ padding:10px; } }
+</style>
+</head><body>${reportHtml}
+<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 200); };<\/script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){
+    flashMsg('Please allow pop-ups to download the report');
+    return;
+  }
+  w.document.open();
+  w.document.write(printDoc);
+  w.document.close();
+});
+
+/* ---------- Events ---------- */
+document.getElementById('userName').addEventListener('input', (e) => {
+  data.name = e.target.value;
+  saveData(data);
+});
+
+document.getElementById('sessionDate').addEventListener('change', (e) => {
+  const s = getSession(currentSessionId);
+  if(s){ s.date = e.target.value; saveData(data); renderSessionSelector(); }
+});
+
+document.getElementById('newSessionBtn').addEventListener('click', () => {
+  const s = { id: uid(), date: todayISO(), entries: {} };
+  data.sessions.push(s);
+  currentSessionId = s.id;
+  saveData(data);
+  renderSessionSelector();
+  renderExercises();
+  flashMsg('New session started');
+});
+
+document.getElementById('clearDataBtn').addEventListener('click', () => {
+  const ok = window.confirm('This will permanently delete all logged sessions and your name from this browser. Continue?');
+  if(!ok) return;
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  data = { name: '', sessions: [] };
+  currentSessionId = null;
+  document.getElementById('userName').value = '';
+  ensureSessionExists();
+  saveData(data);
+  renderSessionSelector();
+  renderExercises();
+  flashMsg('All data cleared');
+});
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  saveData(data);
+  renderSessionSelector();
+  flashMsg('Saved ✓');
+});
+
+/* ---------- Init ---------- */
+function init(){
+  document.getElementById('userName').value = data.name || '';
+  ensureSessionExists();
+  renderTabs();
+  renderSessionSelector();
+  renderExercises();
+}
+init();
+</script>
+</body>
+</html>
