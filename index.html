@@ -594,6 +594,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 async function saveUserProfile(user) {
+   console.log("Writing to Firestore");
 
   await setDoc(
     doc(db, "users", user.uid),
@@ -605,6 +606,8 @@ async function saveUserProfile(user) {
     { merge: true }
   );
 
+  console.log("Firestore write successful");
+ 
 }
 
 const auth = getAuth(app);
@@ -612,23 +615,31 @@ const provider = new GoogleAuthProvider();
 
 document.getElementById("loginBtn")
 .addEventListener("click", async () => {
+      try {
 
-  const result = await signInWithPopup(
-  auth,
-  provider
-);
+    const result = await signInWithPopup(auth, provider);
 
-const user = result.user;
+    const user = result.user;
 
-window.currentUserId = user.uid;
+    console.log("User UID:", user.uid);
 
-await saveUserProfile(user);
+    window.currentUserId = user.uid;
 
-document.getElementById("userInfo")
-  .innerText =
-    "Logged in as " +
-    user.displayName;
+    console.log("Calling saveUserProfile");
 
+    await saveUserProfile(user);
+
+    console.log("saveUserProfile completed");
+
+    document.getElementById("userInfo")
+      .innerText = "Logged in as " + user.displayName;
+
+  } catch (error) {
+
+    console.error("Login error:", error);
+
+  }
+  
 });
 
 </script>
